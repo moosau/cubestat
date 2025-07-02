@@ -59,7 +59,7 @@ export default function EditTimeEntry({ record, onTimeUpdated, trigger }: EditTi
       setSeconds(secs.toString())
       setMilliseconds(ms.toString())
 
-      // Parse date and time - fix the initialization
+      // Parse date and time
       const recordDate = new Date(record.solve_date)
       setSelectedDate(recordDate)
       setSelectedHour(recordDate.getHours().toString())
@@ -112,9 +112,9 @@ export default function EditTimeEntry({ record, onTimeUpdated, trigger }: EditTi
         throw new Error("Please enter a valid time")
       }
 
-      if (timeMs > 3600000) {
-        // 1 hour
-        throw new Error("Time cannot exceed 1 hour")
+      if (timeMs > 600000) {
+        // 10 minutes
+        throw new Error("Time cannot exceed 10 minutes")
       }
 
       // Create the solve date by combining selected date and time
@@ -125,13 +125,6 @@ export default function EditTimeEntry({ record, onTimeUpdated, trigger }: EditTi
       if (solveDateTime > new Date()) {
         throw new Error("Cannot set times in the future")
       }
-
-      console.log("Updating record with:", {
-        time_ms: timeMs,
-        solve_date: solveDateTime.toISOString(),
-        original_date: record.solve_date,
-        new_date: solveDateTime.toISOString(),
-      })
 
       const { error } = await supabase
         .from("solve_records")
@@ -154,7 +147,6 @@ export default function EditTimeEntry({ record, onTimeUpdated, trigger }: EditTi
         setMessage(null)
       }, 2000)
     } catch (error: any) {
-      console.error("Update error:", error)
       setMessage({ type: "error", text: error.message })
     } finally {
       setLoading(false)

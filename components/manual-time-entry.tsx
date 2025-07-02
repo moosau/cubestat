@@ -83,7 +83,7 @@ export default function ManualTimeEntry({ user, onTimeAdded }: ManualTimeEntryPr
       }
 
       if (timeMs > 3600000) {
-        // 1 hour
+        // 1 hour instead of 10 minutes
         throw new Error("Time cannot exceed 1 hour")
       }
 

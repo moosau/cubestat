@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,11 +18,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Loader2, Trash2 } from "lucide-react"
-import { AppSidebar } from "@/components/app-sidebar"
+import { Clock, Menu, Trophy, Loader2, Trash2, MoreVertical, Edit } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import UserProfile from "@/components/auth/user-profile"
 import Celebration from "@/components/animations/celebration"
 import type { User } from "@supabase/supabase-js"
+import ManualTimeEntry from "@/components/manual-time-entry"
+import QuickTimeButtons from "@/components/quick-time-buttons"
+import BulkImport from "@/components/bulk-import"
 import EditTimeEntry from "@/components/edit-time-entry"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
+import { StatisticsView } from "@/components/views/statistics-view"
+import { HistoryView } from "@/components/views/history-view"
+import { SearchView } from "@/components/views/search-view"
+import { SettingsView } from "@/components/views/settings-view"
 
 interface SolveRecord {
   id: string
@@ -54,6 +64,7 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
   }>({ show: false, type: "first_solve", time: "" })
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number | null>(null)
+  const [currentView, setCurrentView] = useState("timer")
 
   // Load solve records from Supabase
   useEffect(() => {
@@ -265,6 +276,12 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
     return Math.min(...solveRecords.map((record) => record.time_ms))
   }
 
+  const getAverageTime = () => {
+    if (solveRecords.length === 0) return null
+    const total = solveRecords.reduce((sum, record) => sum + record.time_ms, 0)
+    return total / solveRecords.length
+  }
+
   const getStatusText = () => {
     if (saving) return "Saving solve..."
     if (isReady) return "Ready! Tap to start"
@@ -281,7 +298,8 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
 
   return (
     <SidebarProvider>
-      <SidebarInset>
+      <AppSidebar user={user} currentView={currentView} onViewChange={setCurrentView} />
+      <SidebarInset className="flex flex-col min-h-screen">
         {/* Celebration Animation */}
         <Celebration
           isVisible={celebration.show}
@@ -291,55 +309,236 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
         />
 
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b px-4">
+        <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-red-500 via-green-500 to-blue-500 rounded"></div>
-            <h1 className="text-lg font-semibold">Rubik's Timer</h1>
+            <SidebarTrigger />
+            <div className="w-8 h-8 bg-gradient-to-br from-red-400 via-green-400 to-blue-400 rounded opacity-80"></div>
+            <h1 className="text-xl font-semibold text-foreground/90">Rubik's Timer</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Separator orientation="vertical" className="h-4" />
-            <SidebarTrigger className="-mr-1" />
-          </div>
+
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="bg-background/50">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-full sm:max-w-md p-0 flex flex-col h-full">
+              <SheetHeader className="px-6 py-4 border-b flex-shrink-0">
+                <SheetTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Dashboard
+                </SheetTitle>
+              </SheetHeader>
+
+              {/* Scrollable Content */}
+              <ScrollArea className="flex-1">
+                <div className="px-6 py-4 space-y-6">
+                  {/* User Profile */}
+                  <UserProfile user={user} />
+
+                  {/* Manual Time Entry */}
+                  <ManualTimeEntry user={user} onTimeAdded={loadSolveRecords} />
+
+                  {/* Quick Time Buttons */}
+                  <QuickTimeButtons user={user} onTimeAdded={loadSolveRecords} />
+
+                  <Separator />
+
+                  {/* Statistics */}
+                  <Card className="bg-card/50">
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Trophy className="h-4 w-4" />
+                        Statistics
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="text-muted-foreground">Best Time</div>
+                          <div className="font-mono">{getBestTime() ? formatTime(getBestTime()!) : "--"}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Average</div>
+                          <div className="font-mono">{getAverageTime() ? formatTime(getAverageTime()!) : "--"}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Total Solves</div>
+                          <div className="font-mono">{solveRecords.length}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Separator />
+
+                  {/* Solve Records Header */}
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Recent Solves</h3>
+                    <BulkImport user={user} onTimesAdded={loadSolveRecords} />
+                  </div>
+
+                  {/* Solve Records List */}
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pb-6">
+                      {solveRecords.length === 0 ? (
+                        <p className="text-muted-foreground text-sm text-center py-8">No solves yet. Start timing!</p>
+                      ) : (
+                        solveRecords.map((record, index) => (
+                          <Card
+                            key={record.id}
+                            className="cursor-pointer hover:bg-muted/30 transition-colors group bg-card/50"
+                            onClick={() => setSelectedRecord(record)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-mono text-lg font-bold">{record.formattedTime}</div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    Solve #{solveRecords.length - index}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-xs text-muted-foreground text-right">
+                                    <div>{new Date(record.solve_date).toLocaleDateString()}</div>
+                                    <div>{new Date(record.solve_date).toLocaleTimeString()}</div>
+                                  </div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <EditTimeEntry
+                                        record={record}
+                                        onTimeUpdated={loadSolveRecords}
+                                        trigger={
+                                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit
+                                          </DropdownMenuItem>
+                                        }
+                                      />
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem
+                                            className="text-red-600 focus:text-red-600"
+                                            onSelect={(e) => e.preventDefault()}
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Solve Record</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to delete this solve time of{" "}
+                                              <strong>{record.formattedTime}</strong>? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={() => deleteSolveRecord(record.id)}
+                                              className="bg-red-600 hover:bg-red-700"
+                                              disabled={deleting === record.id}
+                                            >
+                                              {deleting === record.id && (
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                              )}
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
         </header>
 
-        {/* Main Timer Area */}
-        <div
-          className={`flex-1 flex flex-col items-center justify-center p-8 select-none ${
-            saving || celebration.show ? "cursor-wait" : "cursor-pointer"
-          }`}
-          onClick={handleScreenTap}
-        >
-          <div className="text-center space-y-8">
-            {/* Timer Display */}
-            <div className="space-y-4">
-              <div
-                className={`text-8xl md:text-9xl font-mono font-bold tabular-nums transition-colors duration-300 ${
-                  isRunning ? "text-red-500" : isReady ? "text-green-500" : "text-foreground"
-                }`}
-              >
-                {formatTime(time)}
-              </div>
-              <div className={`text-lg flex items-center justify-center gap-2 ${getStatusColor()}`}>
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {getStatusText()}
+        {/* Main Content Area - Now properly contained within SidebarInset */}
+        <main className="flex-1 overflow-hidden">
+          {currentView === "timer" ? (
+            <div
+              className={`h-full flex flex-col items-center justify-center p-8 select-none ${
+                saving || celebration.show ? "cursor-wait" : "cursor-pointer"
+              }`}
+              onClick={handleScreenTap}
+            >
+              <div className="text-center space-y-8">
+                {/* Timer Display */}
+                <div className="space-y-4">
+                  <div
+                    className={`text-6xl md:text-8xl lg:text-9xl font-mono font-bold tabular-nums transition-colors duration-300 ${
+                      isRunning ? "text-red-400" : isReady ? "text-green-400" : "text-foreground/80"
+                    }`}
+                  >
+                    {formatTime(time)}
+                  </div>
+                  <div className={`text-lg flex items-center justify-center gap-2 ${getStatusColor()}`}>
+                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {getStatusText()}
+                  </div>
+                </div>
+
+                {/* Reset Button */}
+                {(time > 0 || isReady) && !saving && !celebration.show && (
+                  <Button
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      resetTimer()
+                    }}
+                    className="mt-8 bg-background/50"
+                  >
+                    Reset
+                  </Button>
+                )}
               </div>
             </div>
-
-            {/* Reset Button */}
-            {(time > 0 || isReady) && !saving && !celebration.show && (
-              <Button
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  resetTimer()
-                }}
-                className="mt-8"
-              >
-                Reset
-              </Button>
-            )}
-          </div>
-        </div>
+          ) : currentView === "statistics" ? (
+            <div className="h-full overflow-auto">
+              <StatisticsView solveRecords={solveRecords} />
+            </div>
+          ) : currentView === "history" ? (
+            <div className="h-full overflow-auto">
+              <HistoryView
+                solveRecords={solveRecords}
+                onDeleteRecord={deleteSolveRecord}
+                onUpdateRecords={loadSolveRecords}
+                deleting={deleting}
+              />
+            </div>
+          ) : currentView === "search" ? (
+            <div className="h-full overflow-auto">
+              <SearchView solveRecords={solveRecords} />
+            </div>
+          ) : currentView === "settings" ? (
+            <div className="h-full overflow-auto">
+              <SettingsView user={user} />
+            </div>
+          ) : null}
+        </main>
 
         {/* Selected Record Details Modal */}
         {selectedRecord && (
@@ -350,7 +549,7 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
               </SheetHeader>
 
               <div className="mt-6 space-y-6">
-                <Card>
+                <Card className="bg-card/50">
                   <CardContent className="p-6 text-center">
                     <div className="text-4xl font-mono font-bold mb-2">{selectedRecord.formattedTime}</div>
                     <div className="text-muted-foreground">Solve Time</div>
@@ -419,16 +618,6 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
           </Sheet>
         )}
       </SidebarInset>
-      <AppSidebar
-        user={user}
-        solveRecords={solveRecords}
-        loading={loading}
-        deleting={deleting}
-        onTimeAdded={loadSolveRecords}
-        onDeleteRecord={deleteSolveRecord}
-        onRecordSelect={setSelectedRecord}
-        formatTime={formatTime}
-      />
     </SidebarProvider>
   )
 }
