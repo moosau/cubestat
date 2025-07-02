@@ -33,6 +33,7 @@ import { StatisticsView } from "@/components/views/statistics-view"
 import { HistoryView } from "@/components/views/history-view"
 import { SearchView } from "@/components/views/search-view"
 import { SettingsView } from "@/components/views/settings-view"
+import { useSoundSettings } from "@/hooks/use-sound-settings"
 
 interface SolveRecord {
   id: string
@@ -65,6 +66,9 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number | null>(null)
   const [currentView, setCurrentView] = useState("timer")
+
+  // Sound settings hook
+  const { soundEnabled, volume, toggleSound, updateVolume, playSound, playAchievement } = useSoundSettings()
 
   // Load solve records from Supabase
   useEffect(() => {
@@ -122,6 +126,7 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
       setSolveRecords(formattedRecords)
     } catch (error) {
       console.error("Error loading solve records:", error)
+      playSound("error")
     } finally {
       setLoading(false)
     }
@@ -190,9 +195,15 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
           type: achievement,
           time: formatTime(timeMs),
         })
+        // Play achievement sound
+        playAchievement()
+      } else {
+        // Play success sound for regular saves
+        playSound("success")
       }
     } catch (error: any) {
       console.error("Error saving solve record:", error)
+      playSound("error")
       alert(`Error saving solve: ${error.message}`)
     } finally {
       setSaving(false)
@@ -208,8 +219,10 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
 
       setSolveRecords((prev) => prev.filter((record) => record.id !== recordId))
       setSelectedRecord(null)
+      playSound("success")
     } catch (error: any) {
       console.error("Error deleting solve record:", error)
+      playSound("error")
       alert(`Error deleting solve: ${error.message}`)
     } finally {
       setDeleting(null)
@@ -235,11 +248,13 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
       // First tap - get ready
       setIsReady(true)
       setTime(0)
+      playSound("ready")
     } else if (!isRunning && isReady) {
       // Second tap - start timer
       setIsRunning(true)
       setIsReady(false)
       startTimeRef.current = Date.now()
+      playSound("start")
 
       intervalRef.current = setInterval(() => {
         if (startTimeRef.current) {
@@ -255,6 +270,7 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
 
       const finalTime = Date.now() - (startTimeRef.current || 0)
       setTime(finalTime)
+      playSound("stop")
 
       // Save to Supabase
       await saveSolveRecord(finalTime)
@@ -269,6 +285,7 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
     setIsRunning(false)
     setIsReady(false)
     startTimeRef.current = null
+    playSound("tick")
   }
 
   const getBestTime = () => {
@@ -535,7 +552,13 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
             </div>
           ) : currentView === "settings" ? (
             <div className="h-full overflow-auto">
-              <SettingsView user={user} />
+              <SettingsView
+                user={user}
+                soundEnabled={soundEnabled}
+                volume={volume}
+                onToggleSound={toggleSound}
+                onVolumeChange={updateVolume}
+              />
             </div>
           ) : null}
         </main>
