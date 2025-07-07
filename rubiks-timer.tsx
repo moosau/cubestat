@@ -81,6 +81,23 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
     ensureUserProfile()
   }, [user])
 
+  // Add hotkey for spacebar to start/stop timer
+  useEffect(() => {
+    if (currentView !== "timer") return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if input, textarea, or contenteditable is focused
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isEditable = (e.target as HTMLElement)?.isContentEditable;
+      if (tag === "input" || tag === "textarea" || isEditable) return;
+      if (e.code === "Space" && !e.repeat && !saving && !celebration.show) {
+        e.preventDefault();
+        handleScreenTap();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentView, saving, celebration.show, isRunning, isReady]);
+
   const ensureUserProfile = async () => {
     try {
       // Check if profile exists
@@ -497,18 +514,16 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
         <main className="flex-1 overflow-hidden">
           {currentView === "timer" ? (
             <div
-              className={`h-full flex flex-col items-center justify-center p-8 select-none ${
-                saving || celebration.show ? "cursor-wait" : "cursor-pointer"
-              }`}
+              className={`h-full flex flex-col items-center justify-center p-8 select-none ${saving || celebration.show ? "cursor-wait" : "cursor-pointer"
+                }`}
               onClick={handleScreenTap}
             >
               <div className="text-center space-y-8">
                 {/* Timer Display */}
                 <div className="space-y-4">
                   <div
-                    className={`text-6xl md:text-8xl lg:text-9xl font-mono font-bold tabular-nums transition-colors duration-300 ${
-                      isRunning ? "text-red-400" : isReady ? "text-green-400" : "text-foreground/80"
-                    }`}
+                    className={`text-6xl md:text-8xl lg:text-9xl font-mono font-bold tabular-nums transition-colors duration-300 ${isRunning ? "text-red-400" : isReady ? "text-green-400" : "text-foreground/80"
+                      }`}
                   >
                     {formatTime(time)}
                   </div>
