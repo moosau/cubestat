@@ -116,16 +116,34 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
       canvas.width = 1200
       canvas.height = 675
       const ctx = canvas.getContext("2d")!
-      // Background
-      ctx.fillStyle = "#171819"
-      ctx.fillRect(0, 0, 1200, 675)
+      // Draw rounded rectangle background and border
+      function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+      ctx.clearRect(0, 0, 1200, 675);
+      // Background with border radius
+      roundRect(ctx, 0, 0, 1200, 675, 20);
+      ctx.fillStyle = "#171819";
+      ctx.fill();
       // Border
-      ctx.save()
-      ctx.strokeStyle = "#c06969"
-      ctx.lineWidth = 10
-      ctx.setLineDash([20, 20])
-      ctx.strokeRect(5, 5, 1190, 665)
-      ctx.restore()
+      ctx.save();
+      ctx.strokeStyle = "#c06969";
+      ctx.lineWidth = 10;
+      ctx.setLineDash([20, 20]);
+      roundRect(ctx, 5, 5, 1190, 665, 20);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
       // Ranking (top)
       ctx.font = "bold 60px Nunito, sans-serif"
       ctx.textAlign = "center"
