@@ -109,13 +109,26 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
           ? `${min}:${sec.toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`
           : `${sec}.${cs.toString().padStart(2, "0")}`
       }
-      // Placeholder for ranking (replace with real API call)
-      const rankingNumber = 1; // TODO: Fetch real ranking from global solves API
-      function ordinal(n: number) {
-        const s = ["th", "st", "nd", "rd"], v = n % 100;
-        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+      // Fetch real ranking from Edge Function
+      let ranking = "?", total = "?";
+      try {
+        const res = await fetch("https://yylunpfryjyzufwjlaxe.supabase.co/functions/v1/global-ranking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ time_ms: best }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          ranking = json.ordinal;
+          total = json.total;
+        } else {
+          throw new Error("Failed to fetch ranking");
+        }
+      } catch (e) {
+        ranking = "?";
+        total = "?";
+        toast && toast({ title: "Could not fetch global ranking", variant: "destructive" });
       }
-      const ranking = ordinal(rankingNumber);
       // Create canvas styled like Figma
       const canvas = document.createElement("canvas")
       canvas.width = 1200
@@ -157,7 +170,7 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
       grad.addColorStop(0, "#38bdf8"); // blue-400
       grad.addColorStop(1, "#06b6d4"); // cyan-400
       ctx.fillStyle = grad;
-      ctx.fillText(ranking, 600, 120);
+      ctx.fillText(`${ranking} / ${total}`, 600, 120);
       ctx.restore();
       // Name
       ctx.font = "bold 50px Nunito, sans-serif";

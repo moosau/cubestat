@@ -34,6 +34,7 @@ import { HistoryView } from "@/components/views/history-view"
 import { SearchView } from "@/components/views/search-view"
 import { SettingsView } from "@/components/views/settings-view"
 import { useSoundSettings } from "@/hooks/use-sound-settings"
+import LeaderboardView from "@/components/views/leaderboard-view";
 
 interface SolveRecord {
   id: string
@@ -66,6 +67,9 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number | null>(null)
   const [currentView, setCurrentView] = useState("timer")
+  const [leaderboardData, setLeaderboardData] = useState<{ weekly: any[]; overall: any[] } | null>(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
 
   // Sound settings hook
   const { soundEnabled, volume, toggleSound, updateVolume, playSound, playAchievement } = useSoundSettings()
@@ -97,6 +101,29 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentView, saving, celebration.show, isRunning, isReady]);
+
+  // Fetch leaderboard data (mock for now)
+  useEffect(() => {
+    if (currentView !== "leaderboard") return;
+    setLeaderboardLoading(true);
+    setLeaderboardError(null);
+    // TODO: Replace with real API call
+    setTimeout(() => {
+      setLeaderboardData({
+        weekly: [
+          { userId: "1", name: "Alice", bestTime: 8234 },
+          { userId: "2", name: "Bob", bestTime: 9000 },
+          { userId: "3", name: "Charlie", bestTime: 10000 },
+        ],
+        overall: [
+          { userId: "1", name: "Alice", bestTime: 8234 },
+          { userId: "4", name: "David", bestTime: 8500 },
+          { userId: "2", name: "Bob", bestTime: 9000 },
+        ],
+      });
+      setLeaderboardLoading(false);
+    }, 1000);
+  }, [currentView]);
 
   const ensureUserProfile = async () => {
     try {
@@ -341,7 +368,6 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
           time={celebration.time}
           onComplete={() => setCelebration({ ...celebration, show: false })}
         />
-
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
           <div className="flex items-center gap-2">
@@ -349,10 +375,10 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
             <div className="w-8 h-8 bg-gradient-to-br from-red-400 via-green-400 to-blue-400 rounded opacity-80"></div>
             <h1 className="text-xl font-semibold text-foreground/90">Rubik's Timer</h1>
           </div>
-          {/* Removed right-hand Sheet sidebar */}
+          {/* Add Leaderboard nav button */}
+          <Button variant={currentView === "leaderboard" ? "default" : "outline"} onClick={() => setCurrentView("leaderboard")}>Leaderboard</Button>
         </header>
-
-        {/* Main Content Area - Now properly contained within SidebarInset */}
+        {/* Main Content Area */}
         <main className="flex-1 overflow-hidden">
           {currentView === "timer" ? (
             <div
@@ -390,6 +416,16 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
                 )}
               </div>
             </div>
+          ) : currentView === "leaderboard" ? (
+            <div className="h-full overflow-auto flex flex-col items-center justify-center">
+              {leaderboardLoading ? (
+                <div className="text-lg p-8">Loading leaderboard...</div>
+              ) : leaderboardError ? (
+                <div className="text-red-500 p-8">{leaderboardError}</div>
+              ) : leaderboardData ? (
+                <LeaderboardView weekly={leaderboardData.weekly} overall={leaderboardData.overall} />
+              ) : null}
+            </div>
           ) : currentView === "statistics" ? (
             <div className="h-full overflow-auto">
               <StatisticsView solveRecords={solveRecords} />
@@ -419,7 +455,6 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
             </div>
           ) : null}
         </main>
-
         {/* Selected Record Details Modal */}
         {selectedRecord && (
           <Sheet open={!!selectedRecord} onOpenChange={() => setSelectedRecord(null)}>
