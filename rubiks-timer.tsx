@@ -102,27 +102,24 @@ export default function RubiksTimer({ user }: RubiksTimerProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentView, saving, celebration.show, isRunning, isReady]);
 
-  // Fetch leaderboard data (mock for now)
+  // Fetch leaderboard data from Edge Function
   useEffect(() => {
     if (currentView !== "leaderboard") return;
     setLeaderboardLoading(true);
     setLeaderboardError(null);
-    // TODO: Replace with real API call
-    setTimeout(() => {
-      setLeaderboardData({
-        weekly: [
-          { userId: "1", name: "Alice", bestTime: 8234 },
-          { userId: "2", name: "Bob", bestTime: 9000 },
-          { userId: "3", name: "Charlie", bestTime: 10000 },
-        ],
-        overall: [
-          { userId: "1", name: "Alice", bestTime: 8234 },
-          { userId: "4", name: "David", bestTime: 8500 },
-          { userId: "2", name: "Bob", bestTime: 9000 },
-        ],
+    fetch("https://yylunpfryjyzufwjlaxe.supabase.co/functions/v1/top-leaderboards?types=weekly,allTime&limit=10")
+      .then(res => res.json())
+      .then(data => {
+        setLeaderboardData({
+          weekly: data.weekly || [],
+          overall: data.allTime || [],
+        });
+        setLeaderboardLoading(false);
+      })
+      .catch(err => {
+        setLeaderboardError("Failed to load leaderboard.");
+        setLeaderboardLoading(false);
       });
-      setLeaderboardLoading(false);
-    }, 1000);
   }, [currentView]);
 
   const ensureUserProfile = async () => {
