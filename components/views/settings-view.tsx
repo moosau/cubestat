@@ -92,11 +92,14 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
       // Fetch all solves for this user
       const { data, error } = await supabase
         .from("solve_records")
-        .select("time_ms")
+        .select("time_ms,solve_date")
         .eq("user_id", user.id)
+        .order("time_ms", { ascending: true })
       if (error) throw error
       if (!data || data.length === 0) throw new Error("No solves found!")
-      const best = Math.min(...data.map((r: any) => r.time_ms))
+      const bestSolve = data[0]
+      const best = bestSolve.time_ms
+      const bestDate = new Date(bestSolve.solve_date)
       // Format time
       const formatTime = (ms: number) => {
         const min = Math.floor(ms / 60000)
@@ -106,47 +109,59 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
           ? `${min}:${sec.toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`
           : `${sec}.${cs.toString().padStart(2, "0")}`
       }
-      // Create canvas
+      // Placeholder for ranking (replace with real API call)
+      const ranking = "Top 1%" // TODO: Fetch from global solves API
+      // Create canvas styled like Figma
       const canvas = document.createElement("canvas")
-      canvas.width = 600
-      canvas.height = 340
+      canvas.width = 1200
+      canvas.height = 675
       const ctx = canvas.getContext("2d")!
       // Background
-      const grad = ctx.createLinearGradient(0, 0, 600, 340)
-      grad.addColorStop(0, "#fbbf24")
-      grad.addColorStop(1, "#34d399")
-      ctx.fillStyle = grad
-      ctx.fillRect(0, 0, 600, 340)
-      // Trophy
+      ctx.fillStyle = "#171819"
+      ctx.fillRect(0, 0, 1200, 675)
+      // Border
       ctx.save()
-      ctx.translate(80, 120)
-      ctx.scale(3, 3)
-      ctx.beginPath()
-      ctx.arc(20, 20, 20, 0, 2 * Math.PI)
-      ctx.fillStyle = "#f59e42"
-      ctx.fill()
+      ctx.strokeStyle = "#c06969"
+      ctx.lineWidth = 10
+      ctx.setLineDash([20, 20])
+      ctx.strokeRect(5, 5, 1190, 665)
       ctx.restore()
-      // Title
-      ctx.font = "bold 32px sans-serif"
-      ctx.fillStyle = "#fff"
+      // Ranking (top)
+      ctx.font = "bold 60px Nunito, sans-serif"
       ctx.textAlign = "center"
-      ctx.fillText("Fastest Solve!", 400, 70)
-      // Time
-      ctx.font = "bold 64px monospace"
-      ctx.fillStyle = "#fff"
-      ctx.fillText(formatTime(best), 400, 150)
-      // User name
-      ctx.font = "24px sans-serif"
-      ctx.fillStyle = "#222"
-      ctx.fillText(user.user_metadata?.full_name || user.email, 400, 200)
-      // Fun badge
-      ctx.font = "bold 20px sans-serif"
+      ctx.fillStyle = ctx.createLinearGradient(0, 0, 1200, 0)
+      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(0, "#EEE") : null
+      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(1, "#EEE") : null
+      ctx.fillStyle = "#EEE"
+      ctx.fillText(ranking, 600, 120)
+      // Name
+      ctx.font = "bold 50px Nunito, sans-serif"
+      ctx.fillStyle = "#a8819f"
+      ctx.fillText(user.user_metadata?.full_name || user.email, 600, 200)
+      // Subtitle
+      ctx.font = "50px Nunito, sans-serif"
+      ctx.fillStyle = "#a8819f"
+      ctx.fillText("solved the rubik's cube in", 600, 270)
+      // Time (main)
+      ctx.font = "bold 120px Nunito, monospace, sans-serif"
+      ctx.fillStyle = ctx.createLinearGradient(0, 0, 1200, 0)
+      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(0, "#EEE") : null
+      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(1, "#EEE") : null
+      ctx.fillStyle = "#EEE"
+      ctx.fillText(formatTime(best), 600, 400)
+      // Date
+      ctx.font = "bold 40px Nunito, sans-serif"
+      ctx.fillStyle = "#a8819f"
+      ctx.textAlign = "left"
+      ctx.fillText(bestDate.toLocaleDateString(), 200, 500)
+      // Time label
+      ctx.textAlign = "right"
+      ctx.fillText("Personal Best", 1000, 500)
+      // Badge
+      ctx.font = "bold 36px Nunito, sans-serif"
+      ctx.textAlign = "center"
       ctx.fillStyle = "#fbbf24"
-      ctx.fillText("🏆 Rubik's Timer Champion!", 400, 250)
-      // Logo (optional)
-      // const logo = new window.Image()
-      // logo.src = "/placeholder-logo.png"
-      // logo.onload = () => ctx.drawImage(logo, 500, 260, 80, 80)
+      ctx.fillText("🏆 Rubik's Timer Champion!", 600, 600)
       // Download
       canvas.toBlob((blob) => {
         if (!blob) return
