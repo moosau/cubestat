@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { Settings, Bell, Download, Trash2, User, Volume2, VolumeX } from "lucide-react"
+import { Settings, Bell, Download, Trash2, User, Volume2, VolumeX, Trophy } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useState } from "react"
 import { supabase } from "@/lib/supabase/client"
@@ -26,6 +26,7 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
   const [editName, setEditName] = useState(user.user_metadata?.full_name || "")
   const [editLoading, setEditLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
+  const [exportFastestLoading, setExportFastestLoading] = useState(false)
   const { toast } = useToast ? useToast() : { toast: () => { } }
 
   // Edit profile handler
@@ -81,6 +82,88 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
       toast && toast({ title: "Export failed", description: e.message, variant: "destructive" })
     } finally {
       setExportLoading(false)
+    }
+  }
+
+  // Export fastest time as gamified image
+  const handleExportFastest = async () => {
+    setExportFastestLoading(true)
+    try {
+      // Fetch all solves for this user
+      const { data, error } = await supabase
+        .from("solve_records")
+        .select("time_ms")
+        .eq("user_id", user.id)
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error("No solves found!")
+      const best = Math.min(...data.map((r: any) => r.time_ms))
+      // Format time
+      const formatTime = (ms: number) => {
+        const min = Math.floor(ms / 60000)
+        const sec = Math.floor((ms % 60000) / 1000)
+        const cs = Math.floor((ms % 1000) / 10)
+        return min > 0
+          ? `${min}:${sec.toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`
+          : `${sec}.${cs.toString().padStart(2, "0")}`
+      }
+      // Create canvas
+      const canvas = document.createElement("canvas")
+      canvas.width = 600
+      canvas.height = 340
+      const ctx = canvas.getContext("2d")!
+      // Background
+      const grad = ctx.createLinearGradient(0, 0, 600, 340)
+      grad.addColorStop(0, "#fbbf24")
+      grad.addColorStop(1, "#34d399")
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, 600, 340)
+      // Trophy
+      ctx.save()
+      ctx.translate(80, 120)
+      ctx.scale(3, 3)
+      ctx.beginPath()
+      ctx.arc(20, 20, 20, 0, 2 * Math.PI)
+      ctx.fillStyle = "#f59e42"
+      ctx.fill()
+      ctx.restore()
+      // Title
+      ctx.font = "bold 32px sans-serif"
+      ctx.fillStyle = "#fff"
+      ctx.textAlign = "center"
+      ctx.fillText("Fastest Solve!", 400, 70)
+      // Time
+      ctx.font = "bold 64px monospace"
+      ctx.fillStyle = "#fff"
+      ctx.fillText(formatTime(best), 400, 150)
+      // User name
+      ctx.font = "24px sans-serif"
+      ctx.fillStyle = "#222"
+      ctx.fillText(user.user_metadata?.full_name || user.email, 400, 200)
+      // Fun badge
+      ctx.font = "bold 20px sans-serif"
+      ctx.fillStyle = "#fbbf24"
+      ctx.fillText("🏆 Rubik's Timer Champion!", 400, 250)
+      // Logo (optional)
+      // const logo = new window.Image()
+      // logo.src = "/placeholder-logo.png"
+      // logo.onload = () => ctx.drawImage(logo, 500, 260, 80, 80)
+      // Download
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "fastest-time.png"
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, "image/png")
+      toast && toast({ title: "Image exported!" })
+    } catch (e: any) {
+      toast && toast({ title: "Export failed", description: e.message, variant: "destructive" })
+    } finally {
+      setExportFastestLoading(false)
     }
   }
 
@@ -262,6 +345,10 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
                 <Download className="h-4 w-4" />
                 {exportLoading ? "Exporting..." : "Export Data"}
               </Button>
+              <Button variant="outline" className="flex items-center gap-2 bg-background/50" onClick={handleExportFastest} disabled={exportFastestLoading}>
+                <Trophy className="h-4 w-4" />
+                {exportFastestLoading ? "Exporting..." : "Export Fastest Time"}
+              </Button>
               <Button variant="destructive" className="flex items-center gap-2">
                 <Trash2 className="h-4 w-4" />
                 Delete All Data
@@ -283,7 +370,7 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
-            <Button onClick={handleEditProfile} loading={editLoading} disabled={editLoading || !editName.trim()}>
+            <Button onClick={handleEditProfile} disabled={editLoading || !editName.trim()}>
               Save
             </Button>
           </DialogFooter>
