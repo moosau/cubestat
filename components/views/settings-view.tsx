@@ -110,7 +110,12 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
           : `${sec}.${cs.toString().padStart(2, "0")}`
       }
       // Placeholder for ranking (replace with real API call)
-      const ranking = "Top 1%" // TODO: Fetch from global solves API
+      const rankingNumber = 1; // TODO: Fetch real ranking from global solves API
+      function ordinal(n: number) {
+        const s = ["th", "st", "nd", "rd"], v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+      }
+      const ranking = ordinal(rankingNumber);
       // Create canvas styled like Figma
       const canvas = document.createElement("canvas")
       canvas.width = 1200
@@ -144,42 +149,47 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();
-      // Ranking (top)
-      ctx.font = "bold 60px Nunito, sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillStyle = ctx.createLinearGradient(0, 0, 1200, 0)
-      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(0, "#EEE") : null
-      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(1, "#EEE") : null
-      ctx.fillStyle = "#EEE"
-      ctx.fillText(ranking, 600, 120)
+      // Ranking (top, gradient)
+      ctx.save();
+      ctx.font = "bold 60px Nunito, sans-serif";
+      ctx.textAlign = "center";
+      let grad = ctx.createLinearGradient(400, 0, 800, 0);
+      grad.addColorStop(0, "#38bdf8"); // blue-400
+      grad.addColorStop(1, "#06b6d4"); // cyan-400
+      ctx.fillStyle = grad;
+      ctx.fillText(ranking, 600, 120);
+      ctx.restore();
       // Name
-      ctx.font = "bold 50px Nunito, sans-serif"
-      ctx.fillStyle = "#a8819f"
-      ctx.fillText(user.user_metadata?.full_name || user.email, 600, 200)
+      ctx.font = "bold 50px Nunito, sans-serif";
+      ctx.fillStyle = "#a8819f";
+      ctx.textAlign = "center";
+      ctx.fillText(user.user_metadata?.full_name || user.email, 600, 200);
       // Subtitle
-      ctx.font = "50px Nunito, sans-serif"
-      ctx.fillStyle = "#a8819f"
-      ctx.fillText("solved the rubik's cube in", 600, 270)
-      // Time (main)
-      ctx.font = "bold 120px Nunito, monospace, sans-serif"
-      ctx.fillStyle = ctx.createLinearGradient(0, 0, 1200, 0)
-      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(0, "#EEE") : null
-      ctx.fillStyle.addColorStop ? ctx.fillStyle.addColorStop(1, "#EEE") : null
-      ctx.fillStyle = "#EEE"
-      ctx.fillText(formatTime(best), 600, 400)
+      ctx.font = "50px Nunito, sans-serif";
+      ctx.fillStyle = "#a8819f";
+      ctx.fillText("solved the rubik's cube in", 600, 270);
+      // Time (main, gradient)
+      ctx.save();
+      ctx.font = "bold 120px Nunito, monospace, sans-serif";
+      grad = ctx.createLinearGradient(400, 0, 800, 0);
+      grad.addColorStop(0, "#38bdf8");
+      grad.addColorStop(1, "#06b6d4");
+      ctx.fillStyle = grad;
+      ctx.fillText(formatTime(best), 600, 400);
+      ctx.restore();
       // Date
-      ctx.font = "bold 40px Nunito, sans-serif"
-      ctx.fillStyle = "#a8819f"
-      ctx.textAlign = "left"
-      ctx.fillText(bestDate.toLocaleDateString(), 200, 500)
+      ctx.font = "bold 40px Nunito, sans-serif";
+      ctx.fillStyle = "#a8819f";
+      ctx.textAlign = "left";
+      ctx.fillText(bestDate.toLocaleDateString(), 200, 500);
       // Time label
-      ctx.textAlign = "right"
-      ctx.fillText("Personal Best", 1000, 500)
+      ctx.textAlign = "right";
+      ctx.fillText("Personal Best", 1000, 500);
       // Badge
-      ctx.font = "bold 36px Nunito, sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillStyle = "#fbbf24"
-      ctx.fillText("🏆 Rubik's Timer Champion!", 600, 600)
+      ctx.font = "bold 36px Nunito, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fbbf24";
+      ctx.fillText("🏆 Rubik's Timer Champion!", 600, 600);
       // Download
       canvas.toBlob((blob) => {
         if (!blob) return
