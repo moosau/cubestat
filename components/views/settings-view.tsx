@@ -7,6 +7,11 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Settings, Bell, Download, Trash2, User, Volume2, VolumeX } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useState } from "react"
+import { supabase } from "@/lib/supabase/client"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/use-toast"
 
 interface SettingsViewProps {
   user: any
@@ -17,6 +22,68 @@ interface SettingsViewProps {
 }
 
 export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolumeChange }: SettingsViewProps) {
+  const [editOpen, setEditOpen] = useState(false)
+  const [editName, setEditName] = useState(user.user_metadata?.full_name || "")
+  const [editLoading, setEditLoading] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+  const { toast } = useToast ? useToast() : { toast: () => { } }
+
+  // Edit profile handler
+  const handleEditProfile = async () => {
+    setEditLoading(true)
+    try {
+      // Update Supabase auth user metadata
+      const { error: userError } = await supabase.auth.updateUser({
+        data: { full_name: editName },
+      })
+      // Update profiles table
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ full_name: editName })
+        .eq("id", user.id)
+      if (userError || profileError) throw userError || profileError
+      toast && toast({ title: "Profile updated!" })
+      setEditOpen(false)
+      window.location.reload()
+    } catch (e: any) {
+      toast && toast({ title: "Error updating profile", description: e.message, variant: "destructive" })
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  // Export data handler
+  const handleExportData = async () => {
+    setExportLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from("solve_records")
+        .select("time_ms,solve_date")
+        .eq("user_id", user.id)
+        .order("solve_date", { ascending: true })
+      if (error) throw error
+      // Convert to CSV
+      const csv = ["Time (ms),Date"].concat(
+        data.map((row: any) => `${row.time_ms},${row.solve_date}`)
+      ).join("\n")
+      // Download
+      const blob = new Blob([csv], { type: "text/csv" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "rubiks-timer-solves.csv"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast && toast({ title: "Data exported!" })
+    } catch (e: any) {
+      toast && toast({ title: "Export failed", description: e.message, variant: "destructive" })
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6 p-6 max-w-4xl mx-auto">
       <div className="flex items-center gap-2 mb-6">
@@ -43,7 +110,7 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
               <Label className="text-sm font-medium">Email</Label>
               <div className="text-lg">{user.email}</div>
             </div>
-            <Button variant="outline" size="sm" className="bg-background/50">
+            <Button variant="outline" size="sm" className="bg-background/50" onClick={() => { setEditName(user.user_metadata?.full_name || ""); setEditOpen(true); }}>
               Edit Profile
             </Button>
           </CardContent>
@@ -191,9 +258,9 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <Button variant="outline" className="flex items-center gap-2 bg-background/50">
+              <Button variant="outline" className="flex items-center gap-2 bg-background/50" onClick={handleExportData} disabled={exportLoading}>
                 <Download className="h-4 w-4" />
-                Export Data
+                {exportLoading ? "Exporting..." : "Export Data"}
               </Button>
               <Button variant="destructive" className="flex items-center gap-2">
                 <Trash2 className="h-4 w-4" />
@@ -203,6 +270,25 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Label htmlFor="edit-name">Full Name</Label>
+            <Input id="edit-name" value={editName} onChange={e => setEditName(e.target.value)} disabled={editLoading} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
+            <Button onClick={handleEditProfile} loading={editLoading} disabled={editLoading || !editName.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
