@@ -23,7 +23,10 @@ export default function AuthForm() {
     const fullName = formData.get("fullName") as string
 
     try {
-      // First, sign up the user
+      if (!email || !password || !fullName) {
+        throw new Error("All fields are required")
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -38,14 +41,7 @@ export default function AuthForm() {
         throw signUpError
       }
 
-      // If signup successful but user needs email confirmation
-      if (data.user && !data.session) {
-        setMessage({
-          type: "success",
-          text: "Check your email for the confirmation link!",
-        })
-      } else if (data.user && data.session) {
-        // User is immediately signed in (email confirmation disabled)
+      if (data.user && data.session) {
         setMessage({
           type: "success",
           text: "Account created successfully!",
