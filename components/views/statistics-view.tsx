@@ -87,31 +87,31 @@ export function StatisticsView({ solveRecords }: StatisticsViewProps) {
       </div>
 
       {solveRecords.length === 0 ? (
-        <Card className="bg-card/50">
-          <CardContent className="p-8 text-center">
-            <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <h3 className="text-lg font-semibold mb-2">No Statistics Yet</h3>
-            <p className="text-muted-foreground">Start solving to see your statistics!</p>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <BarChart3 className="h-10 w-10 mx-auto mb-4 text-muted-foreground/40" />
+            <h3 className="text-base font-semibold mb-1">No Statistics Yet</h3>
+            <p className="text-sm text-muted-foreground">Start solving to see your statistics.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-6">
           {/* Main Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-card/50 border-green-200/20">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Best Time</CardTitle>
-                <Award className="h-4 w-4 text-green-500/70" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Best Time</CardTitle>
+                <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold font-mono">{getBestTime() ? formatTime(getBestTime()!) : "--"}</div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 border-blue-200/20">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average</CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-500/70" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Average</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold font-mono">
@@ -120,20 +120,20 @@ export function StatisticsView({ solveRecords }: StatisticsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 border-purple-200/20">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Solves</CardTitle>
-                <Target className="h-4 w-4 text-purple-500/70" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Solves</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{solveRecords.length}</div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 border-orange-200/20">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Today's Solves</CardTitle>
-                <Calendar className="h-4 w-4 text-orange-500/70" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Today's Solves</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{getTodaysSolves()}</div>
@@ -143,9 +143,9 @@ export function StatisticsView({ solveRecords }: StatisticsViewProps) {
 
           {/* Averages */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-card/50">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Average of 5</CardTitle>
+                <CardTitle className="text-base font-semibold">Average of 5</CardTitle>
                 <CardDescription>Last 5 solves (best and worst removed)</CardDescription>
               </CardHeader>
               <CardContent>
@@ -155,9 +155,9 @@ export function StatisticsView({ solveRecords }: StatisticsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Average of 12</CardTitle>
+                <CardTitle className="text-base font-semibold">Average of 12</CardTitle>
                 <CardDescription>Last 12 solves (best and worst removed)</CardDescription>
               </CardHeader>
               <CardContent>
@@ -167,9 +167,9 @@ export function StatisticsView({ solveRecords }: StatisticsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Worst Time</CardTitle>
+                <CardTitle className="text-base font-semibold">Worst Time</CardTitle>
                 <CardDescription>Your slowest solve</CardDescription>
               </CardHeader>
               <CardContent>
@@ -181,24 +181,24 @@ export function StatisticsView({ solveRecords }: StatisticsViewProps) {
           </div>
 
           {/* Achievements */}
-          <Card className="bg-card/50">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Achievements</CardTitle>
-              <CardDescription>Your milestone counts</CardDescription>
+              <CardTitle className="text-base font-semibold">Milestones</CardTitle>
+              <CardDescription>How many times you've hit each threshold</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-500/80">{getSub20Count()}</div>
-                  <div className="text-sm text-muted-foreground">Sub-20 Solves</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-border">
+                <div className="text-center py-4 md:py-0">
+                  <div className="text-4xl font-bold font-mono">{getSub20Count()}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Sub-20 Solves</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-500/80">{getSub15Count()}</div>
-                  <div className="text-sm text-muted-foreground">Sub-15 Solves</div>
+                <div className="text-center py-4 md:py-0">
+                  <div className="text-4xl font-bold font-mono">{getSub15Count()}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Sub-15 Solves</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-red-500/80">{getSub10Count()}</div>
-                  <div className="text-sm text-muted-foreground">Sub-10 Solves</div>
+                <div className="text-center py-4 md:py-0">
+                  <div className="text-4xl font-bold font-mono">{getSub10Count()}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Sub-10 Solves</div>
                 </div>
               </div>
             </CardContent>

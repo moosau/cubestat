@@ -44,28 +44,31 @@ export function HistoryView({ solveRecords, onDeleteRecord, onUpdateRecords, del
       </div>
 
       {solveRecords.length === 0 ? (
-        <Card className="bg-card/50">
-          <CardContent className="p-8 text-center">
-            <Inbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <h3 className="text-lg font-semibold mb-2">No Solves Yet</h3>
-            <p className="text-muted-foreground">Your solve history will appear here once you start timing!</p>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Inbox className="h-10 w-10 mx-auto mb-4 text-muted-foreground/40" />
+            <h3 className="text-base font-semibold mb-1">No Solves Yet</h3>
+            <p className="text-sm text-muted-foreground">Your solve history will appear here once you start timing.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {solveRecords.map((record, index) => (
             <Card
               key={record.id}
-              className="cursor-pointer hover:bg-muted/20 transition-colors group bg-card/50"
+              className="cursor-pointer hover:bg-muted/40 transition-colors group"
               onClick={() => setSelectedRecord(record)}
             >
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="font-mono text-lg font-bold">{record.formattedTime}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Solve #{solveRecords.length - index} • {new Date(record.solve_date).toLocaleDateString()} at{" "}
-                      {new Date(record.solve_date).toLocaleTimeString()}
+              <CardContent className="px-5 py-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs tabular-nums text-muted-foreground w-6 text-right">{solveRecords.length - index}</span>
+                    <div>
+                      <div className="font-mono text-base font-semibold tabular-nums">{record.formattedTime}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(record.solve_date).toLocaleDateString()} at{" "}
+                        {new Date(record.solve_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </div>
                     </div>
                   </div>
                   <DropdownMenu>

@@ -1,103 +1,104 @@
 class SoundManager {
   private audioContext: AudioContext | null = null
-  private sounds: Map<string, AudioBuffer> = new Map()
   private enabled = true
 
   constructor() {
     if (typeof window !== "undefined") {
-      this.initializeAudioContext()
-      this.generateSounds()
+      // Resume context on first user gesture to avoid latency on first play
+      const resume = () => {
+        this.getContext()
+        window.removeEventListener("pointerdown", resume)
+        window.removeEventListener("keydown", resume)
+      }
+      window.addEventListener("pointerdown", resume)
+      window.addEventListener("keydown", resume)
     }
   }
 
-  private initializeAudioContext() {
-    try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    } catch (error) {
-      console.warn("Web Audio API not supported:", error)
-    }
-  }
-
-  private async generateSounds() {
-    if (!this.audioContext) return
-
-    // Generate different tones for different events
-    const soundConfigs = {
-      ready: { frequency: 800, duration: 0.1, type: "sine" as OscillatorType },
-      start: { frequency: 1000, duration: 0.15, type: "square" as OscillatorType },
-      stop: { frequency: 600, duration: 0.2, type: "sine" as OscillatorType },
-      achievement: { frequency: 1200, duration: 0.3, type: "triangle" as OscillatorType },
-      tick: { frequency: 400, duration: 0.05, type: "square" as OscillatorType },
-      error: { frequency: 200, duration: 0.3, type: "sawtooth" as OscillatorType },
-      success: { frequency: 880, duration: 0.25, type: "sine" as OscillatorType },
-    }
-
-    for (const [name, config] of Object.entries(soundConfigs)) {
-      const buffer = await this.createTone(config.frequency, config.duration, config.type)
-      if (buffer) {
-        this.sounds.set(name, buffer)
+  private getContext(): AudioContext | null {
+    if (!this.audioContext) {
+      try {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      } catch {
+        return null
       }
     }
+    if (this.audioContext.state === "suspended") {
+      this.audioContext.resume()
+    }
+    return this.audioContext
   }
 
-  private async createTone(frequency: number, duration: number, type: OscillatorType): Promise<AudioBuffer | null> {
-    if (!this.audioContext) return null
+  private playTone(frequency: number, duration: number, type: OscillatorType, volume: number) {
+    const ctx = this.getContext()
+    if (!ctx || !this.enabled) return
 
-    const sampleRate = this.audioContext.sampleRate
-    const length = sampleRate * duration
-    const buffer = this.audioContext.createBuffer(1, length, sampleRate)
-    const data = buffer.getChannelData(0)
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+    const now = ctx.currentTime
 
-    for (let i = 0; i < length; i++) {
-      const t = i / sampleRate
-      let sample = 0
+    oscillator.type = type
+    oscillator.frequency.setValueAtTime(frequency, now)
 
-      switch (type) {
-        case "sine":
-          sample = Math.sin(2 * Math.PI * frequency * t)
-          break
-        case "square":
-          sample = Math.sin(2 * Math.PI * frequency * t) > 0 ? 1 : -1
-          break
-        case "triangle":
-          sample = (2 / Math.PI) * Math.asin(Math.sin(2 * Math.PI * frequency * t))
-          break
-        case "sawtooth":
-          sample = 2 * (t * frequency - Math.floor(0.5 + t * frequency))
-          break
-      }
+    gainNode.gain.setValueAtTime(0, now)
+    gainNode.gain.linearRampToValueAtTime(volume, now + 0.005)
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration)
 
-      // Apply envelope (fade in/out)
-      const envelope = Math.min(1, Math.min(i / (sampleRate * 0.01), (length - i) / (sampleRate * 0.05)))
-      data[i] = sample * envelope * 0.3 // Reduce volume
-    }
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
 
-    return buffer
+    oscillator.start(now)
+    oscillator.stop(now + duration)
   }
 
-  async play(soundName: string, volume = 1) {
-    if (!this.enabled || !this.audioContext || !this.sounds.has(soundName)) return
+  play(soundName: string, volume = 1) {
+    if (!this.enabled) return
+    const v = Math.max(0, Math.min(1, volume)) * 0.3
 
-    try {
-      // Resume audio context if suspended (required by some browsers)
-      if (this.audioContext.state === "suspended") {
-        await this.audioContext.resume()
-      }
-
-      const buffer = this.sounds.get(soundName)!
-      const source = this.audioContext.createBufferSource()
-      const gainNode = this.audioContext.createGain()
-
-      source.buffer = buffer
-      gainNode.gain.value = Math.max(0, Math.min(1, volume))
-
-      source.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-
-      source.start()
-    } catch (error) {
-      console.warn("Error playing sound:", error)
+    switch (soundName) {
+      case "ready":
+        this.playTone(800, 0.1, "sine", v)
+        break
+      case "start":
+        this.playTone(1000, 0.12, "sine", v)
+        break
+      case "stop":
+        this.playTone(600, 0.18, "sine", v)
+        break
+      case "tick":
+        this.playTone(400, 0.05, "square", v * 0.5)
+        break
+      case "success":
+        this.playTone(880, 0.2, "sine", v)
+        break
+      case "error":
+        this.playTone(220, 0.25, "sawtooth", v)
+        break
     }
+  }
+
+  playAchievement() {
+    if (!this.enabled) return
+    const ctx = this.getContext()
+    if (!ctx) return
+
+    const notes = [880, 1108, 1319, 1760]
+    notes.forEach((freq, i) => {
+      const start = ctx.currentTime + i * 0.1
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(freq, start)
+      gain.gain.setValueAtTime(0, start)
+      gain.gain.linearRampToValueAtTime(0.12, start + 0.005)
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(start)
+      osc.stop(start + 0.15)
+    })
   }
 
   setEnabled(enabled: boolean) {
@@ -107,47 +108,6 @@ class SoundManager {
   isEnabled(): boolean {
     return this.enabled
   }
-
-  // Play achievement sound with multiple tones
-  async playAchievement() {
-    if (!this.enabled) return
-
-    const notes = [880, 1108, 1319, 1760] // A5, C#6, E6, A6
-    for (let i = 0; i < notes.length; i++) {
-      setTimeout(() => {
-        this.playCustomTone(notes[i], 0.15, "sine", 0.4)
-      }, i * 100)
-    }
-  }
-
-  private async playCustomTone(frequency: number, duration: number, type: OscillatorType, volume: number) {
-    if (!this.audioContext || !this.enabled) return
-
-    try {
-      if (this.audioContext.state === "suspended") {
-        await this.audioContext.resume()
-      }
-
-      const oscillator = this.audioContext.createOscillator()
-      const gainNode = this.audioContext.createGain()
-
-      oscillator.type = type
-      oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime)
-
-      gainNode.gain.setValueAtTime(0, this.audioContext.currentTime)
-      gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration)
-
-      oscillator.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-
-      oscillator.start(this.audioContext.currentTime)
-      oscillator.stop(this.audioContext.currentTime + duration)
-    } catch (error) {
-      console.warn("Error playing custom tone:", error)
-    }
-  }
 }
 
-// Create singleton instance
 export const soundManager = new SoundManager()

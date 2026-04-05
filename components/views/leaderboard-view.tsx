@@ -30,56 +30,70 @@ function ordinal(n: number) {
 
 export function LeaderboardView({ weekly, overall }: LeaderboardViewProps) {
     return (
-        <div className="grid md:grid-cols-2 gap-8 p-6">
+        <div className="grid md:grid-cols-2 gap-4 p-6 w-full max-w-4xl mx-auto">
             {/* Fastest This Week */}
-            <Card className="bg-card/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-500">
-                        <Trophy className="h-6 w-6 text-yellow-400" /> Fastest This Week
+            <Card>
+                <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                        <Trophy className="h-5 w-5 text-foreground/60" /> Fastest This Week
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ol className="space-y-4">
-                        {weekly.length === 0 && <div className="text-muted-foreground">No solves this week yet.</div>}
+                    <ol className="space-y-2">
+                        {weekly.length === 0 && (
+                            <div className="text-sm text-muted-foreground py-4 text-center">No solves this week yet.</div>
+                        )}
                         {weekly.map((entry, i) => (
-                            <li key={entry.userId} className={`flex items-center gap-4 p-2 rounded-lg ${i === 0 ? "bg-blue-100/30" : ""}`}>
-                                <span className="text-2xl font-bold w-10 text-center">{ordinal(i + 1)}</span>
-                                <Avatar>
+                            <li
+                                key={entry.userId}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${i === 0 ? "bg-muted" : "hover:bg-muted/50"} transition-colors`}
+                            >
+                                <span className={`text-sm font-bold w-6 text-center tabular-nums ${i === 0 ? "text-foreground" : "text-muted-foreground"}`}>
+                                    {i + 1}
+                                </span>
+                                <Avatar className="h-7 w-7">
                                     {entry.avatarUrl ? (
                                         <img src={entry.avatarUrl} alt={entry.name} />
                                     ) : (
-                                        <AvatarFallback>{entry.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                        <AvatarFallback className="text-xs">{entry.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                                     )}
                                 </Avatar>
-                                <span className="font-semibold flex-1">{entry.name}</span>
-                                <span className="font-mono text-lg text-blue-600">{formatTime(entry.bestTime)}</span>
+                                <span className="font-medium text-sm flex-1 truncate">{entry.name}</span>
+                                <span className="font-mono text-sm font-semibold tabular-nums">{formatTime(entry.bestTime)}</span>
                             </li>
                         ))}
                     </ol>
                 </CardContent>
             </Card>
             {/* Fastest Overall */}
-            <Card className="bg-card/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-500">
-                        <Trophy className="h-6 w-6 text-yellow-400" /> Fastest Overall
+            <Card>
+                <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                        <Trophy className="h-5 w-5 text-foreground/60" /> Fastest Overall
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ol className="space-y-4">
-                        {overall.length === 0 && <div className="text-muted-foreground">No solves yet.</div>}
+                    <ol className="space-y-2">
+                        {overall.length === 0 && (
+                            <div className="text-sm text-muted-foreground py-4 text-center">No solves yet.</div>
+                        )}
                         {overall.map((entry, i) => (
-                            <li key={entry.userId} className={`flex items-center gap-4 p-2 rounded-lg ${i === 0 ? "bg-green-100/30" : ""}`}>
-                                <span className="text-2xl font-bold w-10 text-center">{ordinal(i + 1)}</span>
-                                <Avatar>
+                            <li
+                                key={entry.userId}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${i === 0 ? "bg-muted" : "hover:bg-muted/50"} transition-colors`}
+                            >
+                                <span className={`text-sm font-bold w-6 text-center tabular-nums ${i === 0 ? "text-foreground" : "text-muted-foreground"}`}>
+                                    {i + 1}
+                                </span>
+                                <Avatar className="h-7 w-7">
                                     {entry.avatarUrl ? (
                                         <img src={entry.avatarUrl} alt={entry.name} />
                                     ) : (
-                                        <AvatarFallback>{entry.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                        <AvatarFallback className="text-xs">{entry.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                                     )}
                                 </Avatar>
-                                <span className="font-semibold flex-1">{entry.name}</span>
-                                <span className="font-mono text-lg text-green-600">{formatTime(entry.bestTime)}</span>
+                                <span className="font-medium text-sm flex-1 truncate">{entry.name}</span>
+                                <span className="font-mono text-sm font-semibold tabular-nums">{formatTime(entry.bestTime)}</span>
                             </li>
                         ))}
                     </ol>
