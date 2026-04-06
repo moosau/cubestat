@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { Download, User, Volume2, VolumeX, Trophy } from "lucide-react"
+import { Download, User, Volume2, VolumeX, Trophy, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useState } from "react"
 import { supabase } from "@/lib/supabase/client"
@@ -322,6 +322,24 @@ export function SettingsView({ user, soundEnabled, volume, onToggleSound, onVolu
                 {exportFastestLoading ? "Exporting..." : "Export Best Time Image"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Account */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => supabase.auth.signOut()}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </Button>
           </CardContent>
         </Card>
       </div>
